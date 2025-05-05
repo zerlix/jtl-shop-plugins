@@ -6,7 +6,7 @@ declare(strict_types=1);
  * @author  Torsten Hemm
  */
 
-namespace Plugin\jtl_admin;
+namespace Plugin\jtl_admin_demo;
 
 use JTL\Events\Dispatcher;
 use JTL\Plugin\Bootstrapper;

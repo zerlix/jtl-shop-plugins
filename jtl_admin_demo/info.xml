@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <jtlshopplugin>
-    <Name>jtl_admin</Name>
+    <Name>jtl_admin_demo</Name>
     <Description>Demo Adminmenu</Description>
     <Author>Torsten Hemm</Author>
     <URL>http://curiosum.eu</URL>
-    <PluginID>jtl_admin</PluginID>
+    <PluginID>jtl_admin_demo</PluginID>
     <XMLVersion>100</XMLVersion>
     <MinShopVersion>5.0.0</MinShopVersion>
     <Icon></Icon>
