@@ -1,0 +1,18 @@
+# Ignoriere diese Plugins
+jtl_test/
+jtl_plugin_bootstrapper/
+.htaccess
+
+# Temporäre Dateien
+*.swp
+*.tmp
+.DS_Store
+
+# IDE-Dateien
+.idea/
+.vscode/
+*.sublime-*
+
+# Cache und Logs
+*/cache/*
+*/logs/*

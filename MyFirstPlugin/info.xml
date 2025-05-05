@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jtlshopplugin>
+    <Name>MyFirstPlugin</Name>
+    <Description>aaa</Description>
+    <Author>Torsten Hemm</Author>
+    <URL>http://curiosum.eu</URL>
+    <PluginID>MyFirstPlugin</PluginID>
+    <XMLVersion>100</XMLVersion>
+    <MinShopVersion>5.0.0</MinShopVersion>
+    <Icon></Icon>
+    <Version>1.0.0</Version>
+    <CreateDate>2025-05-03</CreateDate>
+    <Install>
+        <empty></empty>
+    </Install>
+</jtlshopplugin>

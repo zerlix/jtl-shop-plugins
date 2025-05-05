@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jtlshopplugin>
+    <Name>jtl_admin</Name>
+    <Description>Demo Adminmenu</Description>
+    <Author>Torsten Hemm</Author>
+    <URL>http://curiosum.eu</URL>
+    <PluginID>jtl_admin</PluginID>
+    <XMLVersion>100</XMLVersion>
+    <MinShopVersion>5.0.0</MinShopVersion>
+    <Icon></Icon>
+    <Version>1.0.0</Version>
+    <CreateDate>2025-05-05</CreateDate>
+    <Install>
+        <Adminmenu>
+            <Customlink sort="1">
+                <Name>Admin Demo</Name>
+            </Customlink>
+            <Settingslink sort="2">
+            <Name>Settings Demo</Name>
+				<Setting type="text" initialValue="1" sort="1" conf="Y">
+					<Name>Text Test</Name>
+					<Description>Beschreibung für Text Test</Description>
+					<ValueName>jtl_test_1</ValueName>
+				</Setting>
+                <Setting type="selectbox" initialValue="D" sort="9" conf="Y" multiple="Y">
+					<Name>Selectbox multiple Test</Name>
+					<Description></Description>
+					<ValueName>jtl_test_multi_select</ValueName>
+					<SelectboxOptions>
+						<Option value="A" sort="1">Alpha</Option>
+						<Option value="B" sort="2">Beta</Option>
+						<Option value="C" sort="3">Cesar</Option>
+						<Option value="D" sort="3">Delta</Option>
+					</SelectboxOptions>
+				</Setting>
+            </Settingslink>
+        </Adminmenu>
+    </Install>
+</jtlshopplugin>

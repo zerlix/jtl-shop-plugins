@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jtlshopplugin>
+    <Name>JTL Portlet Demo</Name>
+    <Description>Demonstration von Portlets in JTL-Shop</Description>
+    <Author>Torsten Hemm</Author>
+    <URL>http://curiosum.eu</URL>
+    <PluginID>jtl_portlet_demo</PluginID>
+    <XMLVersion>100</XMLVersion>
+    <MinShopVersion>5.0.0</MinShopVersion>
+    <Icon></Icon>
+    <Version>1.0.0</Version>
+    <CreateDate>2025-05-05</CreateDate>
+    <Install>
+        <Adminmenu>
+            <Customlink sort="1">
+                <Name>Portlet Demo</Name>
+            </Customlink>
+        </Adminmenu>
+        <Portlets>
+            <Portlet>
+                <Title>Demo Infobox</Title>
+                <Class>DemoInfoBox</Class>
+                <Group>productdetails</Group>
+                <Active>1</Active>
+            </Portlet>
+        </Portlets>
+    </Install>
+</jtlshopplugin>
