@@ -48,20 +48,11 @@ class Bootstrap extends Bootstrapper
         $dispatcher->listen('shop.hook.' . \HOOK_SMARTY_OUTPUTFILTER, [$this, 'addGoogleTagManagerScript']);
 
         // Listener für den JTL Consent Manager registrieren
-        // Stellen Sie sicher, dass die Konstante CONSENT_MANAGER_GET_ACTIVE_ITEMS verfügbar ist.
-        // Falls nicht, muss der korrekte Hook-Name oder die ID verwendet werden.
-        // In JTL 5.2.x ist es z.B. \SHOP_EVENT_CONSENT_MANAGER_GET_ACTIVE_ITEMS
-        // oder die ID des Hooks, falls die Konstante nicht global definiert ist.
-        // Für dieses Beispiel nehmen wir an, dass \CONSENT_MANAGER_GET_ACTIVE_ITEMS korrekt ist.
         if (defined('\CONSENT_MANAGER_GET_ACTIVE_ITEMS')) {
             $dispatcher->listen('shop.hook.' . \CONSENT_MANAGER_GET_ACTIVE_ITEMS, [$this, 'addCustomConsentItems']);
             $this->logger->info('Listener für CONSENT_MANAGER_GET_ACTIVE_ITEMS registriert.');
-        } elseif (defined('\SHOP_EVENT_CONSENT_MANAGER_GET_ACTIVE_ITEMS')) { // Fallback für ältere Konstantenbezeichnung
-             $dispatcher->listen('shop.hook.' . \SHOP_EVENT_CONSENT_MANAGER_GET_ACTIVE_ITEMS, [$this, 'addCustomConsentItems']);
-             $this->logger->info('Listener für SHOP_EVENT_CONSENT_MANAGER_GET_ACTIVE_ITEMS registriert.');
         } else {
             $this->logger->error('Konstante für Consent Manager Hook nicht gefunden. Consent Items können nicht registriert werden.');
-            // Erwägen Sie hier, die Hook-ID direkt zu verwenden, falls bekannt, z.B. $dispatcher->listen(190, ...);
         }
     }
 
@@ -87,25 +78,25 @@ class Bootstrap extends Bootstrapper
 
         // Consent Item für Analytics / Statistiken
         $analyticsItem = new Item();
-        $analyticsItem->setName('Statistiken & Analyse (Google Tag Manager)'); // Passen Sie diesen Text an
+        $analyticsItem->setName('Statistiken & Analyse (Google Tag Manager)'); 
         $analyticsItem->setID(++$lastID);
-        $analyticsItem->setItemID('jtl_gtag_analytics'); // WICHTIG: Dieser Schlüssel wird im localStorage verwendet
+        $analyticsItem->setItemID('jtl_gtag_analytics'); 
         $analyticsItem->setDescription('Diese Einwilligung erlaubt uns, anonymisierte Daten über Ihre Nutzung unserer Webseite zu sammeln, um unser Angebot und Ihr Nutzererlebnis zu verbessern. Dies erfolgt über den Google Tag Manager.'); // Passen Sie diesen Text an
-        $analyticsItem->setPurpose('Webseitenanalyse, Verbesserung des Nutzererlebnisses'); // Passen Sie diesen Text an
-        $analyticsItem->setPrivacyPolicy($shopURL . '/datenschutz'); // Link zur Ihrer Datenschutzseite
-        $analyticsItem->setCompany('Ihr Firmenname'); // Passen Sie dies an
+        $analyticsItem->setPurpose('Webseitenanalyse, Verbesserung des Nutzererlebnisses');
+        $analyticsItem->setPrivacyPolicy($shopURL . '/datenschutz'); 
+        $analyticsItem->setCompany('Google Inc.'); // Passen Sie dies an
         $args['items']->push($analyticsItem);
         $this->logger->info('Consent Item "jtl_gtag_analytics" zum Consent Manager hinzugefügt.');
 
         // Consent Item für Marketing / Personalisierung
         $marketingItem = new Item();
-        $marketingItem->setName('Marketing & Personalisierung (Google Tag Manager)'); // Passen Sie diesen Text an
+        $marketingItem->setName('Marketing & Personalisierung (Google Tag Manager)'); 
         $marketingItem->setID(++$lastID);
-        $marketingItem->setItemID('jtl_gtag_marketing'); // WICHTIG: Dieser Schlüssel wird im localStorage verwendet
+        $marketingItem->setItemID('jtl_gtag_marketing'); 
         $marketingItem->setDescription('Diese Einwilligung erlaubt uns, Daten zu sammeln, um Ihnen relevantere Werbung auf dieser und anderen Webseiten anzuzeigen und Marketingkampagnen zu optimieren. Dies erfolgt über den Google Tag Manager.'); // Passen Sie diesen Text an
-        $marketingItem->setPurpose('Personalisierte Werbung, Marketingoptimierung'); // Passen Sie diesen Text an
-        $marketingItem->setPrivacyPolicy($shopURL . '/datenschutz'); // Link zur Ihrer Datenschutzseite
-        $marketingItem->setCompany('Ihr Firmenname'); // Passen Sie dies an
+        $marketingItem->setPurpose('Personalisierte Werbung, Marketingoptimierung'); 
+        $marketingItem->setPrivacyPolicy($shopURL . '/datenschutz'); 
+        $marketingItem->setCompany('Google Inc.'); 
         $args['items']->push($marketingItem);
         $this->logger->info('Consent Item "jtl_gtag_marketing" zum Consent Manager hinzugefügt.');
     }
