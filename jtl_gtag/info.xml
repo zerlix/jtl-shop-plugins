@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jtlshopplugin>
+    <Name>jtl_gtag</Name>
+    <Description>Google Gtag</Description>
+    <Author>Torsten Hemm</Author>
+    <URL>http://curiosum.eu</URL>
+    <PluginID>jtl_gtag</PluginID>
+    <XMLVersion>100</XMLVersion>
+    <MinShopVersion>5.0.0</MinShopVersion>
+    <Icon></Icon>
+    <Version>1.0.0</Version>
+    <CreateDate>2025-05-05</CreateDate>
+    <Install>
+        <Adminmenu>
+            <Settingslink sort="1">
+                <Name>Settings Demo</Name>
+				<Setting type="text" initialValue="1" sort="1" conf="Y">
+					<Name>Gtag</Name>
+					<Description>Google Tag</Description>
+					<ValueName>gtag</ValueName>
+				</Setting>
+            </Settingslink>
+            <Customlink sort="2">
+                <Name>Support</Name>
+            </Customlink>
+            <Customlink sort="3">
+                <Name>Lizenz</Name>
+            </Customlink>                  
+        </Adminmenu>
+    </Install>
+</jtlshopplugin>
