@@ -84,7 +84,7 @@ class Bootstrap extends Bootstrapper
         $analyticsItem->setDescription('Diese Einwilligung erlaubt uns, anonymisierte Daten über Ihre Nutzung unserer Webseite zu sammeln, um unser Angebot und Ihr Nutzererlebnis zu verbessern. Dies erfolgt über den Google Tag Manager.'); // Passen Sie diesen Text an
         $analyticsItem->setPurpose('Webseitenanalyse, Verbesserung des Nutzererlebnisses');
         $analyticsItem->setPrivacyPolicy($shopURL . '/datenschutz'); 
-        $analyticsItem->setCompany('Google Inc.'); // Passen Sie dies an
+        $analyticsItem->setCompany('Google Inc.'); 
         $args['items']->push($analyticsItem);
         $this->logger->info('Consent Item "jtl_gtag_analytics" zum Consent Manager hinzugefügt.');
 
