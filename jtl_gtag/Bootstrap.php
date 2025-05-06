@@ -9,6 +9,7 @@ use JTL\Plugin\Bootstrapper;
 use JTL\Shop;
 use Psr\Log\LoggerInterface;
 use JTL\phpQuery\phpQueryObject;
+use JTL\Consent\Item; // Hinzufügen für Consent Item
 
 /**
  * Class Bootstrap
@@ -45,6 +46,68 @@ class Bootstrap extends Bootstrapper
 
         // Listener für den HOOK_SMARTY_OUTPUTFILTER registrieren
         $dispatcher->listen('shop.hook.' . \HOOK_SMARTY_OUTPUTFILTER, [$this, 'addGoogleTagManagerScript']);
+
+        // Listener für den JTL Consent Manager registrieren
+        // Stellen Sie sicher, dass die Konstante CONSENT_MANAGER_GET_ACTIVE_ITEMS verfügbar ist.
+        // Falls nicht, muss der korrekte Hook-Name oder die ID verwendet werden.
+        // In JTL 5.2.x ist es z.B. \SHOP_EVENT_CONSENT_MANAGER_GET_ACTIVE_ITEMS
+        // oder die ID des Hooks, falls die Konstante nicht global definiert ist.
+        // Für dieses Beispiel nehmen wir an, dass \CONSENT_MANAGER_GET_ACTIVE_ITEMS korrekt ist.
+        if (defined('\CONSENT_MANAGER_GET_ACTIVE_ITEMS')) {
+            $dispatcher->listen('shop.hook.' . \CONSENT_MANAGER_GET_ACTIVE_ITEMS, [$this, 'addCustomConsentItems']);
+            $this->logger->info('Listener für CONSENT_MANAGER_GET_ACTIVE_ITEMS registriert.');
+        } elseif (defined('\SHOP_EVENT_CONSENT_MANAGER_GET_ACTIVE_ITEMS')) { // Fallback für ältere Konstantenbezeichnung
+             $dispatcher->listen('shop.hook.' . \SHOP_EVENT_CONSENT_MANAGER_GET_ACTIVE_ITEMS, [$this, 'addCustomConsentItems']);
+             $this->logger->info('Listener für SHOP_EVENT_CONSENT_MANAGER_GET_ACTIVE_ITEMS registriert.');
+        } else {
+            $this->logger->error('Konstante für Consent Manager Hook nicht gefunden. Consent Items können nicht registriert werden.');
+            // Erwägen Sie hier, die Hook-ID direkt zu verwenden, falls bekannt, z.B. $dispatcher->listen(190, ...);
+        }
+    }
+
+    /**
+     * Fügt dem JTL Consent Manager benutzerdefinierte Einträge für GTM hinzu.
+     *
+     * @param array $args Argumente des Events, enthält die Collection der Consent Items.
+     */
+    public function addCustomConsentItems(array $args): void
+    {
+        if (!isset($args['items']) || !method_exists($args['items'], 'push') || !method_exists($args['items'], 'reduce')) {
+            $this->logger->error('Consent Items Collection ist nicht im erwarteten Format.');
+            return;
+        }
+
+        $lastID = $args['items']->reduce(static function ($result, Item $item) {
+            $value = $item->getID();
+            return $result === null || $value > $result ? $value : $result;
+        }) ?? 0;
+
+        // Basis-Shop-URL ermitteln
+        $shopURL = Shop::getURL();
+
+        // Consent Item für Analytics / Statistiken
+        $analyticsItem = new Item();
+        $analyticsItem->setName('Statistiken & Analyse (Google Tag Manager)'); // Passen Sie diesen Text an
+        $analyticsItem->setID(++$lastID);
+        $analyticsItem->setItemID('jtl_gtag_analytics'); // WICHTIG: Dieser Schlüssel wird im localStorage verwendet
+        $analyticsItem->setDescription('Diese Einwilligung erlaubt uns, anonymisierte Daten über Ihre Nutzung unserer Webseite zu sammeln, um unser Angebot und Ihr Nutzererlebnis zu verbessern. Dies erfolgt über den Google Tag Manager.'); // Passen Sie diesen Text an
+        $analyticsItem->setPurpose('Webseitenanalyse, Verbesserung des Nutzererlebnisses'); // Passen Sie diesen Text an
+        $analyticsItem->setPrivacyPolicy($shopURL . '/datenschutz'); // Link zur Ihrer Datenschutzseite
+        $analyticsItem->setCompany('Ihr Firmenname'); // Passen Sie dies an
+        $args['items']->push($analyticsItem);
+        $this->logger->info('Consent Item "jtl_gtag_analytics" zum Consent Manager hinzugefügt.');
+
+        // Consent Item für Marketing / Personalisierung
+        $marketingItem = new Item();
+        $marketingItem->setName('Marketing & Personalisierung (Google Tag Manager)'); // Passen Sie diesen Text an
+        $marketingItem->setID(++$lastID);
+        $marketingItem->setItemID('jtl_gtag_marketing'); // WICHTIG: Dieser Schlüssel wird im localStorage verwendet
+        $marketingItem->setDescription('Diese Einwilligung erlaubt uns, Daten zu sammeln, um Ihnen relevantere Werbung auf dieser und anderen Webseiten anzuzeigen und Marketingkampagnen zu optimieren. Dies erfolgt über den Google Tag Manager.'); // Passen Sie diesen Text an
+        $marketingItem->setPurpose('Personalisierte Werbung, Marketingoptimierung'); // Passen Sie diesen Text an
+        $marketingItem->setPrivacyPolicy($shopURL . '/datenschutz'); // Link zur Ihrer Datenschutzseite
+        $marketingItem->setCompany('Ihr Firmenname'); // Passen Sie dies an
+        $args['items']->push($marketingItem);
+        $this->logger->info('Consent Item "jtl_gtag_marketing" zum Consent Manager hinzugefügt.');
     }
 
     /**
@@ -77,6 +140,7 @@ class Bootstrap extends Bootstrapper
             'ad_personalization': 'denied'
             // 'wait_for_update': 500 // Optional: Wartezeit für ein Update in Millisekunden
           });
+          console.log('jtl_gtag: Default consent gesetzt.');
         </script>";
 
         // GTM Skript für den <head>
@@ -101,43 +165,61 @@ class Bootstrap extends Bootstrapper
         <script>
           document.addEventListener('DOMContentLoaded', function () {
             try {
-              const consent = JSON.parse(localStorage.getItem('jtl_cookie_consent'));
+              const consentData = localStorage.getItem('consent');
+              if (!consentData) {
+                console.log('jtl_gtag: consent nicht im localStorage gefunden.');
+                return;
+              }
 
-              if (!consent) return;
+              const consent = JSON.parse(consentData);
+              console.log('jtl_gtag: Geladene Consent-Daten:', consent);
 
               const granted = {
                 ad_storage: 'denied',
                 analytics_storage: 'denied',
-                ad_user_data: 'denied',      // Hinzugefügt für Vollständigkeit mit Default
-                ad_personalization: 'denied' // Hinzugefügt für Vollständigkeit mit Default
+                ad_user_data: 'denied',
+                ad_personalization: 'denied'
               };
 
-              // Du kannst diese Keys je nach deinem Setup anpassen
-              if (consent.marketing) {
-                granted.ad_storage = 'granted';
-                granted.ad_user_data = 'granted'; // Wenn Marketing auch diese umfasst
-                granted.ad_personalization = 'granted'; // Wenn Marketing auch diese umfasst
+              if (consent && consent.settings) {
+                // Prüfe auf Einwilligung für 'jtl_gtag_analytics'
+                if (consent.settings.jtl_gtag_analytics === true) {
+                  granted.analytics_storage = 'granted';
+                  console.log('jtl_gtag: analytics_storage auf granted gesetzt (wegen jtl_gtag_analytics).');
+                } else {
+                  console.log('jtl_gtag: analytics_storage bleibt denied (jtl_gtag_analytics nicht true).');
+                }
+
+                // Prüfe auf Einwilligung für 'jtl_gtag_marketing'
+                if (consent.settings.jtl_gtag_marketing === true) {
+                  granted.ad_storage = 'granted';
+                  granted.ad_user_data = 'granted';
+                  granted.ad_personalization = 'granted';
+                  console.log('jtl_gtag: ad_storage, ad_user_data, ad_personalization auf granted gesetzt (wegen jtl_gtag_marketing).');
+                } else {
+                  console.log('jtl_gtag: ad_storage, ad_user_data, ad_personalization bleiben denied (jtl_gtag_marketing nicht true).');
+                }
+              } else {
+                console.log('jtl_gtag: consent.settings nicht im consent Objekt gefunden.');
               }
 
-              if (consent.tracking) {
-                granted.analytics_storage = 'granted';
+              if (window.gtag) {
+                window.gtag('consent', 'update', granted);
+                console.log('jtl_gtag: gtag consent update ausgeführt mit:', granted);
+              } else {
+                console.warn('jtl_gtag: window.gtag nicht gefunden für consent update.');
               }
-
-              // Google Consent Mode updaten
-              window.gtag && window.gtag('consent', 'update', granted);
 
             } catch (e) {
-              console.warn('Consent Mode konnte nicht gesetzt werden:', e);
+              console.warn('jtl_gtag: Fehler beim Verarbeiten des Consent Mode:', e);
             }
           });
         </script>";
 
         $head = $document->find('head');
         if ($head->length > 0) {
-            // Wichtig: Zuerst Default Consent, dann GTM
-            $head->prepend($gtmHeadScript); // GTM wird zuerst prepended
-            $head->prepend($defaultConsentScript); // Dann Default Consent, damit es vor GTM steht
-            // Alternativ: $head->prepend($defaultConsentScript . $gtmHeadScript);
+            $head->prepend($gtmHeadScript);
+            $head->prepend($defaultConsentScript);
             $this->logger->info('Google Tag Manager Head-Skript und Default Consent eingefügt.');
         } else {
             $this->logger->warning('Konnte das <head>-Element nicht finden, um die GTM Head-Skripte einzufügen.');
@@ -147,7 +229,6 @@ class Bootstrap extends Bootstrapper
         if ($body->length > 0) {
             $body->prepend($gtmBodyNoScript);
             $this->logger->info('Google Tag Manager Body-Noscript eingefügt.');
-            // Das Update-Skript am Ende des Bodys einfügen
             $body->append($updateConsentScript);
             $this->logger->info('Consent Update Skript eingefügt.');
         } else {
