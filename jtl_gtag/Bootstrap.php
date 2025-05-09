@@ -9,7 +9,7 @@ use JTL\Plugin\Bootstrapper;
 use JTL\Shop;
 use Psr\Log\LoggerInterface;
 use JTL\phpQuery\phpQueryObject;
-use JTL\Consent\Item; // Hinzufügen für Consent Item
+use JTL\Consent\Item;
 
 /**
  * Class Bootstrap
@@ -78,25 +78,25 @@ class Bootstrap extends Bootstrapper
 
         // Consent Item für Analytics / Statistiken
         $analyticsItem = new Item();
-        $analyticsItem->setName('Statistiken & Analyse (Google Tag Manager)'); 
+        $analyticsItem->setName('Statistiken & Analyse (Google Tag Manager)');
         $analyticsItem->setID(++$lastID);
-        $analyticsItem->setItemID('jtl_gtag_analytics'); 
-        $analyticsItem->setDescription('Diese Einwilligung erlaubt uns, anonymisierte Daten über Ihre Nutzung unserer Webseite zu sammeln, um unser Angebot und Ihr Nutzererlebnis zu verbessern. Dies erfolgt über den Google Tag Manager.'); // Passen Sie diesen Text an
+        $analyticsItem->setItemID('jtl_gtag_analytics');
+        $analyticsItem->setDescription('Diese Einwilligung erlaubt uns, anonymisierte Daten über Ihre Nutzung unserer Webseite zu sammeln, um unser Angebot und Ihr Nutzererlebnis zu verbessern. Dies erfolgt über den Google Tag Manager.');
         $analyticsItem->setPurpose('Webseitenanalyse, Verbesserung des Nutzererlebnisses');
-        $analyticsItem->setPrivacyPolicy($shopURL . '/datenschutz'); 
-        $analyticsItem->setCompany('Google Inc.'); 
+        $analyticsItem->setPrivacyPolicy($shopURL . '/datenschutz');
+        $analyticsItem->setCompany('Google Inc.');
         $args['items']->push($analyticsItem);
         $this->logger->info('Consent Item "jtl_gtag_analytics" zum Consent Manager hinzugefügt.');
 
         // Consent Item für Marketing / Personalisierung
         $marketingItem = new Item();
-        $marketingItem->setName('Marketing & Personalisierung (Google Tag Manager)'); 
+        $marketingItem->setName('Marketing & Personalisierung (Google Tag Manager)');
         $marketingItem->setID(++$lastID);
-        $marketingItem->setItemID('jtl_gtag_marketing'); 
-        $marketingItem->setDescription('Diese Einwilligung erlaubt uns, Daten zu sammeln, um Ihnen relevantere Werbung auf dieser und anderen Webseiten anzuzeigen und Marketingkampagnen zu optimieren. Dies erfolgt über den Google Tag Manager.'); // Passen Sie diesen Text an
-        $marketingItem->setPurpose('Personalisierte Werbung, Marketingoptimierung'); 
-        $marketingItem->setPrivacyPolicy($shopURL . '/datenschutz'); 
-        $marketingItem->setCompany('Google Inc.'); 
+        $marketingItem->setItemID('jtl_gtag_marketing');
+        $marketingItem->setDescription('Diese Einwilligung erlaubt uns, Daten zu sammeln, um Ihnen relevantere Werbung auf dieser und anderen Webseiten anzuzeigen und Marketingkampagnen zu optimieren. Dies erfolgt über den Google Tag Manager.');
+        $marketingItem->setPurpose('Personalisierte Werbung, Marketingoptimierung');
+        $marketingItem->setPrivacyPolicy($shopURL . '/datenschutz');
+        $marketingItem->setCompany('Google Inc.');
         $args['items']->push($marketingItem);
         $this->logger->info('Consent Item "jtl_gtag_marketing" zum Consent Manager hinzugefügt.');
     }
@@ -120,7 +120,7 @@ class Bootstrap extends Bootstrapper
         $document = $args_arr['document'];
 
         // Standard Google Consent Mode v2 Skript (vor GTM einfügen)
-        $defaultConsentScript = "
+        $consentModeScript = "
         <script>
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
@@ -129,9 +129,55 @@ class Bootstrap extends Bootstrapper
             'analytics_storage': 'denied',
             'ad_user_data': 'denied',
             'ad_personalization': 'denied'
-            // 'wait_for_update': 500 // Optional: Wartezeit für ein Update in Millisekunden
           });
           console.log('jtl_gtag: Default consent gesetzt.');
+
+          // **Direktes Auslesen und Anwenden der Consent-Einstellungen**
+          try {
+            const consentData = localStorage.getItem('consent');
+            if (!consentData) {
+              console.log('jtl_gtag: consent nicht im localStorage gefunden.');
+            } else {
+              const consent = JSON.parse(consentData);
+              console.log('jtl_gtag: Geladene Consent-Daten:', consent);
+
+              const granted = {
+                ad_storage: 'denied',
+                analytics_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied'
+              };
+
+              if (consent && consent.settings) {
+                if (consent.settings.jtl_gtag_analytics === true) {
+                  granted.analytics_storage = 'granted';
+                  console.log('jtl_gtag: analytics_storage auf granted gesetzt (wegen jtl_gtag_analytics).');
+                } else {
+                  console.log('jtl_gtag: analytics_storage bleibt denied (jtl_gtag_analytics nicht true).');
+                }
+
+                if (consent.settings.jtl_gtag_marketing === true) {
+                  granted.ad_storage = 'granted';
+                  granted.ad_user_data = 'granted';
+                  granted.ad_personalization = 'granted';
+                  console.log('jtl_gtag: ad_storage, ad_user_data, ad_personalization auf granted gesetzt (wegen jtl_gtag_marketing).');
+                } else {
+                  console.log('jtl_gtag: ad_storage, ad_user_data, ad_personalization bleiben denied (jtl_gtag_marketing nicht true).');
+                }
+              } else {
+                console.log('jtl_gtag: consent.settings nicht im consent Objekt gefunden.');
+              }
+
+              if (window.gtag) {
+                window.gtag('consent', 'update', granted);
+                console.log('jtl_gtag: gtag consent update ausgeführt mit:', granted);
+              } else {
+                console.warn('jtl_gtag: window.gtag nicht gefunden für consent update.');
+              }
+            }
+          } catch (e) {
+            console.warn('jtl_gtag: Fehler beim Verarbeiten des Consent Mode:', e);
+          }
         </script>";
 
         // GTM Skript für den <head>
@@ -151,67 +197,12 @@ class Bootstrap extends Bootstrapper
         height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript>
         <!-- End Google Tag Manager (noscript) -->";
 
-        // Skript zum Aktualisieren des Consent Status basierend auf localStorage
-        $updateConsentScript = "
-        <script>
-          document.addEventListener('DOMContentLoaded', function () {
-            try {
-              const consentData = localStorage.getItem('consent');
-              if (!consentData) {
-                console.log('jtl_gtag: consent nicht im localStorage gefunden.');
-                return;
-              }
-
-              const consent = JSON.parse(consentData);
-              console.log('jtl_gtag: Geladene Consent-Daten:', consent);
-
-              const granted = {
-                ad_storage: 'denied',
-                analytics_storage: 'denied',
-                ad_user_data: 'denied',
-                ad_personalization: 'denied'
-              };
-
-              if (consent && consent.settings) {
-                // Prüfe auf Einwilligung für 'jtl_gtag_analytics'
-                if (consent.settings.jtl_gtag_analytics === true) {
-                  granted.analytics_storage = 'granted';
-                  console.log('jtl_gtag: analytics_storage auf granted gesetzt (wegen jtl_gtag_analytics).');
-                } else {
-                  console.log('jtl_gtag: analytics_storage bleibt denied (jtl_gtag_analytics nicht true).');
-                }
-
-                // Prüfe auf Einwilligung für 'jtl_gtag_marketing'
-                if (consent.settings.jtl_gtag_marketing === true) {
-                  granted.ad_storage = 'granted';
-                  granted.ad_user_data = 'granted';
-                  granted.ad_personalization = 'granted';
-                  console.log('jtl_gtag: ad_storage, ad_user_data, ad_personalization auf granted gesetzt (wegen jtl_gtag_marketing).');
-                } else {
-                  console.log('jtl_gtag: ad_storage, ad_user_data, ad_personalization bleiben denied (jtl_gtag_marketing nicht true).');
-                }
-              } else {
-                console.log('jtl_gtag: consent.settings nicht im consent Objekt gefunden.');
-              }
-
-              if (window.gtag) {
-                window.gtag('consent', 'update', granted);
-                console.log('jtl_gtag: gtag consent update ausgeführt mit:', granted);
-              } else {
-                console.warn('jtl_gtag: window.gtag nicht gefunden für consent update.');
-              }
-
-            } catch (e) {
-              console.warn('jtl_gtag: Fehler beim Verarbeiten des Consent Mode:', e);
-            }
-          });
-        </script>";
-
         $head = $document->find('head');
         if ($head->length > 0) {
+            // **WICHTIG: Zuerst Consent Mode Skript, dann GTM**
             $head->prepend($gtmHeadScript);
-            $head->prepend($defaultConsentScript);
-            $this->logger->info('Google Tag Manager Head-Skript und Default Consent eingefügt.');
+            $head->prepend($consentModeScript);
+            $this->logger->info('Google Tag Manager Head-Skript und Consent Mode Skript eingefügt.');
         } else {
             $this->logger->warning('Konnte das <head>-Element nicht finden, um die GTM Head-Skripte einzufügen.');
         }
@@ -220,10 +211,8 @@ class Bootstrap extends Bootstrapper
         if ($body->length > 0) {
             $body->prepend($gtmBodyNoScript);
             $this->logger->info('Google Tag Manager Body-Noscript eingefügt.');
-            $body->append($updateConsentScript);
-            $this->logger->info('Consent Update Skript eingefügt.');
         } else {
-            $this->logger->warning('Konnte das <body>-Element nicht finden, um das GTM Body-Noscript und Update-Skript einzufügen.');
+            $this->logger->warning('Konnte das <body>-Element nicht finden, um das GTM Body-Noscript einzufügen.');
         }
     }
 }
